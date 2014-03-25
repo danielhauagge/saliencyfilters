@@ -5,3 +5,6 @@ compute_saliency: compute_saliency.cpp
 
 image.o: image.cpp image.hpp
 	clang++ -c $< -o $@
+
+test_image: test_image.cpp image.o
+	clang++ -g -lfreeimage $^ -o $@

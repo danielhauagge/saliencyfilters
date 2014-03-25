@@ -1,39 +1,27 @@
 #include "image.hpp"
 
-#include <iostream>
-#include <cassert>
-#include <string>
-#include <cmath>
-
 #include <FreeImage.h>
 
 FIBITMAP *
-convertRGBFtoRGB(FIBITMAP *rgbf)
+convertRGBFtoRGB(const Image &img)
 {
-    FIBITMAP *rgb = FreeImage_Allocate(FreeImage_GetWidth(rgbf), FreeImage_GetHeight(rgbf), 24);
+    FIBITMAP *rgb = FreeImage_Allocate(img.width(), img.height(), 24);
 
-    for (int i = 0; i < FreeImage_GetHeight(rgbf); i++) {
-        FIRGBF *rowf = (FIRGBF *)FreeImage_GetScanLine(rgbf, i);
+    for (int i = 0; i < img.height(); i++) {
+        const float *rowf = img.scanLine(i);
         BYTE *row = (BYTE *)FreeImage_GetScanLine(rgb, i);
-        for (int j = 0; j < FreeImage_GetWidth(rgbf); j++, rowf++, row += 3) {
-            row[FI_RGBA_RED] = rowf->red * 255.0;
-            row[FI_RGBA_GREEN] = rowf->green * 255.0;
-            row[FI_RGBA_BLUE] = rowf->blue * 255.0;
+        for (int j = 0; j < img.width(); j++, rowf += 3, row += 3) {
+            row[FI_RGBA_RED] = rowf[0] * 255.0;
+            row[FI_RGBA_GREEN] = rowf[1] * 255.0;
+            row[FI_RGBA_BLUE] = rowf[2] * 255.0;
         }
     }
 
     return rgb;
 }
 
-FIRGBF *
-Image::operator()(int x, int y)
-{
-    FIRGBF *line = getScanLine(y);
-    return line + x;
-}
-
 Image::Image(const std::string &fname):
-    _data(NULL)
+    _img(NULL)
 {
     int flag = 0;
     FREE_IMAGE_FORMAT fif = FIF_UNKNOWN;
@@ -49,21 +37,39 @@ Image::Image(const std::string &fname):
 
     // check that the plugin has reading capabilities ...
     if((fif != FIF_UNKNOWN) && FreeImage_FIFSupportsReading(fif)) {
-        FIBITMAP *tmp = FreeImage_Load(fif, fname.c_str(), flag);
-        _data = FreeImage_ConvertToRGBF(tmp);
-        FreeImage_Unload(tmp);
+        FIBITMAP *tmp8 = FreeImage_Load(fif, fname.c_str(), flag);
+        FIBITMAP *tmp32 = FreeImage_ConvertToRGBF(tmp8);
+        FreeImage_Unload(tmp8);
+
+        _width = FreeImage_GetWidth(tmp32);
+        _height = FreeImage_GetWidth(tmp32);
+        _stride = FreeImage_GetPitch(tmp32);
+        _nChannels =  FreeImage_GetLine(tmp32) / (_width * sizeof(float));
+
+        _img = new char[_stride * _height];
+
+        memcpy(_img, FreeImage_GetScanLine(tmp32, 0), _height * _stride);
+
+        FreeImage_Unload(tmp32);
     }
 }
 
 Image::Image(const Image &other):
-    _data(NULL)
+    _img(NULL)
 {
-    _data = FreeImage_Clone(other._data);
+    _width = other._width;
+    _height = other._height;
+    _stride = other._stride;
+    _nChannels = other._nChannels;
+
+    _img = new char[_stride * _height];
+
+    memcpy(other._img, _img, _height * _stride);
 }
 
 Image::~Image()
 {
-    if(_data) FreeImage_Unload(_data);
+    if(_img) delete [] _img;
 }
 
 bool
@@ -73,12 +79,12 @@ Image::writeToFile(const std::string &fname) const
     BOOL status = FALSE;
 
     int flag = 0;
-    if(_data) {
+    if(_img) {
         // try to guess the file format from the file extension
         fif = FreeImage_GetFIFFromFilename(fname.c_str());
         if(fif != FIF_UNKNOWN ) {
             // FIBITMAP *tmp = FreeImage_ConvertTo24Bits(_data);
-            FIBITMAP *tmp = convertRGBFtoRGB(_data);
+            FIBITMAP *tmp = convertRGBFtoRGB(*this);
 
             // check that the plugin has sufficient writing and export capabilities ...
             WORD bpp = FreeImage_GetBPP(tmp);
@@ -91,11 +97,4 @@ Image::writeToFile(const std::string &fname) const
     }
 
     return (status == TRUE);
-}
-
-int
-Image::nChannels() const
-{
-    int bytespp = FreeImage_GetLine(_data) / FreeImage_GetWidth(_data);
-    return bytespp / sizeof(float);
 }

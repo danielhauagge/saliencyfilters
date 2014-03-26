@@ -9,6 +9,5 @@ main(int argc, char const *argv[])
     Image img(inFName);
     img.writeToFile(outFName);
 
-
     return EXIT_SUCCESS;
 }

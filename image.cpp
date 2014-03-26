@@ -5,12 +5,12 @@
 FIBITMAP *
 convertRGBFtoRGB(const Image &img)
 {
-    FIBITMAP *rgb = FreeImage_Allocate(img.width(), img.height(), 24);
+    FIBITMAP *rgb = FreeImage_Allocate(img.size().width, img.size().height, 24);
 
-    for (int i = 0; i < img.height(); i++) {
+    for (int i = 0; i < img.size().height; i++) {
         const float *rowf = img.scanLine(i);
         BYTE *row = (BYTE *)FreeImage_GetScanLine(rgb, i);
-        for (int j = 0; j < img.width(); j++, rowf += 3, row += 3) {
+        for (int j = 0; j < img.size().width; j++, rowf += 3, row += 3) {
             row[FI_RGBA_RED] = rowf[0] * 255.0;
             row[FI_RGBA_GREEN] = rowf[1] * 255.0;
             row[FI_RGBA_BLUE] = rowf[2] * 255.0;
@@ -21,7 +21,8 @@ convertRGBFtoRGB(const Image &img)
 }
 
 Image::Image(const std::string &fname):
-    _img(NULL)
+    _img(NULL),
+    _size(0, 0)
 {
     int flag = 0;
     FREE_IMAGE_FORMAT fif = FIF_UNKNOWN;
@@ -41,14 +42,14 @@ Image::Image(const std::string &fname):
         FIBITMAP *tmp32 = FreeImage_ConvertToRGBF(tmp8);
         FreeImage_Unload(tmp8);
 
-        _width = FreeImage_GetWidth(tmp32);
-        _height = FreeImage_GetWidth(tmp32);
+        _size.width = FreeImage_GetWidth(tmp32);
+        _size.height = FreeImage_GetWidth(tmp32);
         _stride = FreeImage_GetPitch(tmp32);
-        _nChannels =  FreeImage_GetLine(tmp32) / (_width * sizeof(float));
+        _nChannels =  FreeImage_GetLine(tmp32) / (_size.width * sizeof(float));
 
-        _img = new char[_stride * _height];
+        _img = new char[_stride * _size.height];
 
-        memcpy(_img, FreeImage_GetScanLine(tmp32, 0), _height * _stride);
+        memcpy(_img, FreeImage_GetScanLine(tmp32, 0), _size.height * _stride);
 
         FreeImage_Unload(tmp32);
     }
@@ -57,14 +58,13 @@ Image::Image(const std::string &fname):
 Image::Image(const Image &other):
     _img(NULL)
 {
-    _width = other._width;
-    _height = other._height;
+    _size = other._size;
     _stride = other._stride;
     _nChannels = other._nChannels;
 
-    _img = new char[_stride * _height];
+    _img = new char[_stride * _size.height];
 
-    memcpy(other._img, _img, _height * _stride);
+    memcpy(other._img, _img, _size.height * _stride);
 }
 
 Image::~Image()

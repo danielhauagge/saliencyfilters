@@ -1,10 +1,18 @@
-all: compute_saliency
+all: compute_saliency test_image test_opencl
 
-compute_saliency: compute_saliency.cpp
-	clang++ -framework OpenCL compute_saliency.cpp -o compute_saliency
+OBJS:=image.o opencl.o slicsuperpixels.o
 
-image.o: image.cpp image.hpp
-	clang++ -c $< -o $@
+%.o: %.cpp %.hpp
+	clang++ -g -c $< -o $@
 
-test_image: test_image.cpp image.o
-	clang++ -g -lfreeimage $^ -o $@
+compute_saliency: compute_saliency.cpp ${OBJS}
+	clang++ -g ${OBJS} -lfreeimage -framework OpenCL $< -o $@
+
+test_image: test_image.cpp ${OBJS}
+	clang++ -g ${OBJS} -lfreeimage -framework OpenCL $< -o $@
+
+test_opencl: test_opencl.cpp ${OBJS}
+	clang++ -g ${OBJS} -lfreeimage -framework OpenCL $< -o $@
+
+# test_image: test_image.cpp image.o
+# 	clang++ -g -g -lfreeimage $^ -o $@

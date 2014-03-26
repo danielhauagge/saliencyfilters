@@ -1,6 +1,8 @@
 #ifndef __SAL_IMAGE_HPP__
 #define __SAL_IMAGE_HPP__
 
+#include "common.hpp"
+
 #include <iostream>
 #include <cassert>
 #include <string>
@@ -10,7 +12,7 @@ class Image
 {
 private:
     char *_img;
-    int _width, _height;
+    Size _size;
     int _stride; // in bytes
     int _nChannels;
 
@@ -28,14 +30,15 @@ public:
 
     bool writeToFile(const std::string &fname) const;
 
-    int width() const { return _width; }
-    int height() const { return _height; }
+    const Size &size() const { return _size; }
     int stride() const { return _stride; }
     int nChannels() const { return _nChannels; }
 
     float *scanLine(int y) { return (float *) (_img + _stride * y); }
     const float *scanLine(int y) const { return (float *) (_img + _stride * y); }
+
     float *operator()(int x, int y) { return scanLine(y) + x * sizeof(float) * _nChannels; }
+    const float *operator()(int x, int y) const { return scanLine(y) + x * sizeof(float) * _nChannels; }
 };
 
 #endif // __SAL_IMAGE_HPP__

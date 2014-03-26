@@ -61,8 +61,8 @@ Image::Image(const Size &size):
     _size(size)
 {
     _nChannels = 3;
-    _stride = size.width * sizeof(float);
-    _img = new char[_stride * _size.height * _nChannels * sizeof(float)];
+    _stride = size.width * sizeof(float) * _nChannels;
+    _img = new char[_stride * _size.height];
 }
 
 Image::Image(const Image &other):

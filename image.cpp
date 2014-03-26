@@ -8,7 +8,7 @@ convertRGBFtoRGB(const Image &img)
     FIBITMAP *rgb = FreeImage_Allocate(img.size().width, img.size().height, 24);
 
     for (int i = 0; i < img.size().height; i++) {
-        const float *rowf = img.scanLine(i);
+        const float *rowf = img.scanLine(img.size().height - 1 - i);
         BYTE *row = (BYTE *)FreeImage_GetScanLine(rgb, i);
         for (int j = 0; j < img.size().width; j++, rowf += 3, row += 3) {
             row[FI_RGBA_RED] = rowf[0] * 255.0;
@@ -49,10 +49,20 @@ Image::Image(const std::string &fname):
 
         _img = new char[_stride * _size.height];
 
-        memcpy(_img, FreeImage_GetScanLine(tmp32, 0), _size.height * _stride);
+        for (int i = 0; i < _size.height; i++) {
+            memcpy(_img + i * _stride, FreeImage_GetScanLine(tmp32, _size.height - 1 - i), _stride);
+        }
 
         FreeImage_Unload(tmp32);
     }
+}
+
+Image::Image(const Size &size):
+    _size(size)
+{
+    _nChannels = 3;
+    _stride = size.width * sizeof(float);
+    _img = new char[_stride * _size.height * _nChannels * sizeof(float)];
 }
 
 Image::Image(const Image &other):

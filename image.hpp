@@ -26,6 +26,7 @@ public:
 
     Image(const std::string &fname);
     Image(const Image &other);
+    Image(const Size &size);
     ~Image();
 
     bool writeToFile(const std::string &fname) const;
@@ -37,8 +38,8 @@ public:
     float *scanLine(int y) { return (float *) (_img + _stride * y); }
     const float *scanLine(int y) const { return (float *) (_img + _stride * y); }
 
-    float *operator()(int x, int y) { return scanLine(y) + x * sizeof(float) * _nChannels; }
-    const float *operator()(int x, int y) const { return scanLine(y) + x * sizeof(float) * _nChannels; }
+    float *operator()(int x, int y) { return scanLine(y) + x * _nChannels; }
+    const float *operator()(int x, int y) const { return scanLine(y) + x * _nChannels; }
 };
 
 #endif // __SAL_IMAGE_HPP__

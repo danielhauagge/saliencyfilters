@@ -1,0 +1,5 @@
+[ ] Lab colorspace conversion
+[ ] Add final step in SLIC that removes pixels that are well connected to main
+    cluster
+[ ] Render slic Super pixels
+[ ] Use geodesic distance instead of euclidean distance

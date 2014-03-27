@@ -1,14 +1,16 @@
-Implementation of the two papers
+OpenCL implementation of the two papers
 
 Saliency Filters: Contrast Based Filtering for Salient Region Detection
 by Federico Perazzi, Philipp Krahenbuhl, Yael Pritch, and Alexander Hornung
 CVPR 2012
+http://graphics.ethz.ch/~perazzif/saliency_filters/
 
 and
 
 SLIC Superpixels
-by R. Achanta, A. Shaji, K. Smith, A. Lucchi, P. Fua, and S. Ssstrunk.
+by R. Achanta, A. Shaji, K. Smith, A. Lucchi, P. Fua, and S. Susstrunk.
 Technical report, 2010
+http://ivrg.epfl.ch/research/superpixels
 
 DEPENDENCIES
 ============

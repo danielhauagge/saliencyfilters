@@ -87,7 +87,7 @@ const char *kernelSources =
     "__kernel void elementSaliency(                                          \n" \
     "   __global const float* uniqueness,                                    \n" \
     "   __global const float* distribution,                                  \n" \
-    "   __global float* saliency,                                            \n" \
+    "   __global float* saliencySP,                                          \n" \
     "   const int clustersWidth, const int clustersHeight,                   \n" \
     "   float k)                                                             \n" \
     "{                                                                       \n" \
@@ -96,7 +96,51 @@ const char *kernelSources =
     "                                                                        \n" \
     "   if(i < clustersHeight && j < clustersWidth) {                        \n" \
     "      int idx = (i * clustersWidth + j);                                \n" \
-    "      saliency[idx] = uniqueness[idx] * exp(-k * distribution[idx]);    \n" \
+    "      saliencySP[idx] = uniqueness[idx] * exp(-k * distribution[idx]);  \n" \
+    "   }                                                                    \n" \
+    "}                                                                       \n" \
+    "                                                                        \n" \
+    "__kernel void propagateSaliency(                                        \n" \
+    "   __global const float* img,                                           \n" \
+    "   __global const int* clusterAssig,                                    \n" \
+    "   __global const float* saliencySP,                                    \n" \
+    "   __global float* saliency,                                            \n" \
+    "   const int imWidth, const int imHeight,                               \n" \
+    "   const int imStride,                                                  \n" \
+    "   const int clustersWidth, const int clustersHeight, int supportSize,  \n" \
+    "   float alpha, float beta)                                             \n" \
+    "{                                                                       \n" \
+    "   int i = get_global_id(0);                                            \n" \
+    "   int j = get_global_id(1);                                            \n" \
+    "                                                                        \n" \
+    "   if(i < imHeight && j < imWidth) {                                    \n" \
+    "      int idx = (imStride/4) * i + 3 * j;                               \n" \
+    "      float currColor[3] = {img[idx], img[idx + 1], img[idx + 2]};      \n" \
+    "      float currPos[2] = {i, j};                                        \n" \
+    "                                                                        \n" \
+    "      float totalW = 0.0;                                               \n" \
+    "      float totalS = 0.0;                                               \n" \
+    "                                                                        \n" \
+    "      for(int ii = i - supportSize; ii <= i + supportSize; ii++) {      \n" \
+    "         if(ii < 0 || ii >= imHeight) continue;                         \n" \
+    "         for(int jj = j - supportSize; jj <= j + supportSize; jj++) {   \n" \
+    "            if(jj < 0 || jj >= imWidth) continue;                       \n" \
+    "                                                                        \n" \
+    "            int neighSpIdx = clusterAssig[ii * imWidth + jj];           \n" \
+    "            float neighSal = saliencySP[neighSpIdx];                    \n" \
+    "                                                                        \n" \
+    "            int neighIdx = (imStride/4) * ii + 3 * jj;                  \n" \
+    "            float neighColor[3] = {img[neighIdx], img[neighIdx + 1], img[neighIdx + 2]}; \n" \
+    "            float neighPos[2] = {ii, jj};                               \n" \
+    "                                                                        \n" \
+    "            float w = exp(-0.5 * ( alpha * eucDist2(currColor, neighColor, 3) + beta * eucDist2(currPos, neighPos, 2))); \n" \
+    "            totalW += w;                                                \n" \
+    "                                                                        \n" \
+    "            totalS += neighSal * w;                                     \n" \
+    "         }                                                              \n" \
+    "      }                                                                 \n" \
+    "      totalS /= totalW;                                                 \n" \
+    "      saliency[i * imWidth + j] = totalS;                                           \n" \
     "   }                                                                    \n" \
     "}                                                                       \n" \
     "\n";
@@ -173,7 +217,7 @@ elementSaliency(OpenCL &opencl,
 void
 saliencyFiltersSP(OpenCL &opencl,
                   const Size &gridSize,
-                  Memory &clusterCenters, Memory &saliency,
+                  Memory &clusterCenters, Memory &saliencySP,
                   float stdDevUniqueness, float stdDevDistribution, float k)
 {
     Memory uniqueness(opencl, CL_MEM_READ_WRITE, sizeof(float) * gridSize.width * gridSize.height);
@@ -181,6 +225,35 @@ saliencyFiltersSP(OpenCL &opencl,
 
     elementUniqueness(opencl, gridSize, clusterCenters, uniqueness, stdDevUniqueness);
     elementDistribution(opencl, gridSize, clusterCenters, distribution, stdDevDistribution);
-    elementSaliency(opencl, gridSize, uniqueness, distribution, saliency, k);
+    elementSaliency(opencl, gridSize, uniqueness, distribution, saliencySP, k);
 }
 
+void propagateSaliency(OpenCL &opencl, const Size &imgSize, int imgStride,
+                       const Size &gridSize,
+                       Memory &img, Memory &clusterAssig,
+                       Memory &saliencySP, Memory &saliency,
+                       float alpha, float beta)
+{
+    Kernel kernel(opencl, kernelSources, "propagateSaliency");
+
+    int supportSize = 3 * sqrt(1.0 / (2.0 * beta));
+    LOG_EXPR(supportSize);
+
+    kernel.setArgument( 0, &img.getMemory());
+    kernel.setArgument( 1, &clusterAssig.getMemory());
+    kernel.setArgument( 2, &saliencySP.getMemory());
+    kernel.setArgument( 3, &saliency.getMemory());
+    kernel.setArgument( 4, &imgSize.width);
+    kernel.setArgument( 5, &imgSize.height);
+    kernel.setArgument( 6, &imgStride);
+    kernel.setArgument( 7, &gridSize.width);
+    kernel.setArgument( 8, &gridSize.height);
+    kernel.setArgument( 9, &supportSize);
+    kernel.setArgument(10, &alpha);
+    kernel.setArgument(11, &beta);
+
+    std::vector<size_t> tmpSize(2);
+    tmpSize[0] = imgSize.height;
+    tmpSize[1] = imgSize.width;
+    executeKernel(opencl, kernel, tmpSize);
+}

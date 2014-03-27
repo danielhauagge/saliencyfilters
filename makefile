@@ -21,5 +21,3 @@ test_opencl: test_opencl.cpp ${OBJS}
 
 clean:
 	rm -rf ${OBJS} ${BIN}
-# test_image: test_image.cpp image.o
-# 	clang++ -g -g -lfreeimage $^ -o $@

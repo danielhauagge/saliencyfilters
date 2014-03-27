@@ -18,7 +18,7 @@ main(int argc, char const *argv[])
     OptionParser optParser(&args, &opts);
     optParser.setNArguments(2, 2);
 
-    optParser.addUsage("<in:img1> <out:salicency.pgm>");
+    optParser.addUsage("<in:img> <out:salicency.pgm>");
     optParser.addDescription("Compute per pixel saliency using algorithm proposed in the paper \"Saliency Filters: Contrast Based Filtering for Salient Region Detection\" by Perazzi et. al.");
     optParser.addCopyright("2014 by Daniel Hauagge");
 

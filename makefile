@@ -1,6 +1,6 @@
 all: compute_saliency test_image test_opencl
 
-OBJS:=image.o opencl.o slicsuperpixels.o
+OBJS:=image.o opencl.o slicsuperpixels.o utils.o
 
 %.o: %.cpp %.hpp
 	clang++ -g -c $< -o $@

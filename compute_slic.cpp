@@ -4,18 +4,42 @@
 #include "slicsuperpixels.hpp"
 #include "colorconversion.hpp"
 
+#include <CMDCore/optparser>
+
 int
 main(int argc, char const *argv[])
 {
-    std::string inFName = argv[1];
-    std::string outFName = argv[2];
+    using namespace cmdc;
+
+    OptionParser::Arguments args;
+    OptionParser::Options opts;
+
+    OptionParser optParser(&args, &opts);
+    optParser.setNArguments(2, 2);
+
+    optParser.addUsage("<in:img1> <out:salicency.pgm>");
+    optParser.addDescription("Compute per pixel saliency using algorithm proposed in the paper \"Saliency Filters: Contrast Based Filtering for Salient Region Detection\" by Perazzi et. al.");
+    optParser.addCopyright("2014 by Daniel Hauagge");
+
+    optParser.addFlag("useGPU", "-g", "--gpu", "Use the GPU for computation");
+
+    optParser.addSection("Super Pixel Parameters");
+    optParser.addOption("superPixelSpacing", "-s", "P", "--super-pixel-spacing", "Controls spacing between super pixels [default: %default]", "8");
+    optParser.addOption("nIters", "-n", "N", "--num-iterations", "How many iterations of K-means to run in super pixel routine [default = %default]", "10");
+    optParser.addOption("relWeight", "-r", "W", "--relative-weight", "Relative weight of Color vs Position, higher values favor spatial dimensions [default = %default]", "40");
+
+    optParser.parse(argc, argv);
+
+    std::string inFName = args[0];
+    std::string outFName = args[1];
 
     Image img(inFName);
-    int superPixelSpacing = 64;
-    int nIters = 10;
-    float relWeight = 40; // Relative weight of Color vs Position, higher values favor spatial dimensions
 
-    bool useGPU = false;
+    int superPixelSpacing = opts["superPixelSpacing"].asInt();
+    int nIters = opts["nIters"].asInt();
+    float relWeight = opts["relWeight"].asFloat();
+
+    bool useGPU = opts["useGPU"].asBool();
     OpenCL opencl(useGPU);
 
     Size spSize = superPixelGridSize(img.size(), superPixelSpacing);

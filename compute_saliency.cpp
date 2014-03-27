@@ -5,19 +5,57 @@
 #include "saliencyfilter.hpp"
 #include "colorconversion.hpp"
 
+#include <CMDCore/optparser>
+
 int
 main(int argc, char const *argv[])
 {
-    std::string inFName = argv[1];
-    std::string outFName = argv[2];
+    using namespace cmdc;
+
+    OptionParser::Arguments args;
+    OptionParser::Options opts;
+
+    OptionParser optParser(&args, &opts);
+    optParser.setNArguments(2, 2);
+
+    optParser.addUsage("<in:img1> <out:salicency.pgm>");
+    optParser.addDescription("Compute per pixel saliency using algorithm proposed in the paper \"Saliency Filters: Contrast Based Filtering for Salient Region Detection\" by Perazzi et. al.");
+    optParser.addCopyright("2014 by Daniel Hauagge");
+
+    optParser.addFlag("useGPU", "-g", "--gpu", "Use the GPU for computation");
+
+    optParser.addSection("Super Pixel Parameters");
+    optParser.addOption("superPixelSpacing", "-s", "P", "--super-pixel-spacing", "Controls spacing between super pixels [default: %default]", "8");
+    optParser.addOption("nIters", "-n", "N", "--num-iterations", "How many iterations of K-means to run in super pixel routine [default = %default]", "10");
+    optParser.addOption("relWeight", "-r", "W", "--relative-weight", "Relative weight of Color vs Position, higher values favor spatial dimensions [default = %default]", "40");
+
+    optParser.addSection("Salicency Parameters");
+    optParser.addOption("stdDevUniqueness", "-u", "F", "--std-uniqueness", "Standard deviation of uniqueness score [default = %default]", "0.25");
+    optParser.addOption("stdDevDistribution", "-d", "F", "--std-distribution", "Standard deviation of distribution score [default = %default]", "2");
+    optParser.addOption("k", "-k", "F", "", "Exponent weight in saliency score [default = %default]", "6");
+
+    optParser.addSection("Propagating Saliency Score to Pixels");
+    optParser.addOption("alpha", "-a", "F", "--alpha", "Color weight [default = %default]", "0.0333");
+    optParser.addOption("beta", "-b", "F", "--beta", "Position weight [default = %default]", "0.0333");
+
+    optParser.parse(argc, argv);
+
+    std::string inFName = args[0];
+    std::string outFName = args[1];
 
     Image img(inFName);
-    int superPixelSpacing = 8;
-    int nIters = 10;
-    float relWeight = 40; // Relative weight of Color vs Position, higher values favor spatial dimensions
+    int superPixelSpacing = opts["superPixelSpacing"].asInt();
+    int nIters = opts["nIters"].asInt();
+    float relWeight = opts["relWeight"].asFloat(); // Relative weight of Color vs Position, higher values favor spatial dimensions
 
-    bool useGPU = false;
-    LOG_EXPR(useGPU);
+    float stdDevUniqueness = opts["stdDevUniqueness"].asFloat();
+    float stdDevDistribution = opts["stdDevDistribution"].asFloat();
+    float k = opts["k"].asFloat();
+
+    float alpha = opts["alpha"].asFloat();
+    float beta = opts["beta"].asFloat();
+
+    bool useGPU = opts["useGPU"].asBool();
     OpenCL opencl(useGPU);
 
     Size spSize = superPixelGridSize(img.size(), superPixelSpacing);
@@ -36,13 +74,14 @@ main(int argc, char const *argv[])
     slicSuperPixels(opencl, img.size(), img.stride(), superPixelSpacing, nIters, relWeight, imgLab, clusterCenters, clusterAssig);
 
     LOG_INFO("Computing saliency");
-    saliencyFiltersSP(opencl, spSize, clusterCenters, saliencySP);
+    saliencyFiltersSP(opencl, spSize, clusterCenters, saliencySP, stdDevUniqueness, stdDevDistribution, k);
 
     LOG_INFO("Propagating salicency measure to pixels");
-    propagateSaliency(opencl, img.size(), img.stride(), spSize, imgLab, clusterAssig, saliencySP, saliency);
+    propagateSaliency(opencl, img.size(), img.stride(), spSize, imgLab, clusterAssig, saliencySP, saliency, alpha, beta);
 
-    // float saliency_[img.size().width * img.size().height];
-    // saliency.readBuffer(opencl, saliency_);
-    // writePgm(outFName, saliency_, img.size());
+    float saliency_[img.size().width * img.size().height];
+    saliency.readBuffer(opencl, saliency_);
+    writePgm(outFName, saliency_, img.size());
+
     return EXIT_SUCCESS;
 }

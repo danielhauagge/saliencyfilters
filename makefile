@@ -1,22 +1,25 @@
 BIN:=compute_slic compute_saliency test_image test_opencl
 OBJS:=image.o opencl.o slicsuperpixels.o utils.o saliencyfilter.o colorconversion.o
 
+CFLAGS=-g
+LDFLAGS=-lfreeimage -framework OpenCL -framework CMDCore -lboost_system
+
 all: ${BIN}
 
 %.o: %.cpp %.hpp
-	clang++ -g -c $< -o $@
+	clang++ ${CFLAGS} -c $< -o $@
 
 compute_slic: compute_slic.cpp ${OBJS}
-	clang++ -g ${OBJS} -lfreeimage -framework OpenCL $< -o $@
+	clang++ ${CFLAGS} ${OBJS} ${LDFLAGS} $< -o $@
 
 compute_saliency: compute_saliency.cpp ${OBJS}
-	clang++ -g ${OBJS} -lfreeimage -framework OpenCL $< -o $@
+	clang++ ${CFLAGS} ${OBJS} ${LDFLAGS} $< -o $@
 
 test_image: test_image.cpp ${OBJS}
-	clang++ -g ${OBJS} -lfreeimage -framework OpenCL $< -o $@
+	clang++ ${CFLAGS} ${OBJS} ${LDFLAGS} $< -o $@
 
 test_opencl: test_opencl.cpp ${OBJS}
-	clang++ -g ${OBJS} -lfreeimage -framework OpenCL $< -o $@
+	clang++ ${CFLAGS} ${OBJS} ${LDFLAGS} $< -o $@
 
 
 clean:

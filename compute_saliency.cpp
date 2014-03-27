@@ -9,7 +9,7 @@ int
 main(int argc, char const *argv[])
 {
     using namespace cmdc;
-    Logger::setLogLevels(cmdc::LOGLEVEL_INFO);
+    Logger::setLogLevels(cmdc::LOGLEVEL_DEBUG);
 
     OptionParser::Arguments args;
     OptionParser::Options opts;
@@ -22,6 +22,7 @@ main(int argc, char const *argv[])
     optParser.addCopyright("2014 by Daniel Hauagge");
 
     optParser.addFlag("useGPU", "-g", "--gpu", "Use the GPU for computation");
+    optParser.addFlag("useLab", "-l", "--lab", "Use Lab colorspace");
 
     optParser.addSection("Super Pixel Parameters");
     optParser.addOption("superPixelSpacing", "-s", "P", "--super-pixel-spacing", "Controls spacing between super pixels [default: %default]", "8");
@@ -57,6 +58,8 @@ main(int argc, char const *argv[])
     bool useGPU = opts["useGPU"].asBool();
     OpenCL opencl(useGPU);
 
+    bool useLab = opts["useLab"].asBool();
+
     Size spSize = superPixelGridSize(img.size(), superPixelSpacing);
 
     // 3 dims for color + 2 for x and y
@@ -69,9 +72,9 @@ main(int argc, char const *argv[])
     Memory imgLab(opencl, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, img.stride() * img.size().height, img(0, 0));
     rgb2lab(opencl, img.size(), img.stride(), imgRGB, imgLab);
 
-    slicSuperPixels(opencl, img.size(), img.stride(), superPixelSpacing, nIters, relWeight, imgRGB, clusterCenters, clusterAssig);
-    saliencyFiltersSP(opencl, spSize, clusterCenters, saliencySP);//, stdDevUniqueness, stdDevDistribution, k);
-    propagateSaliency(opencl, img.size(), img.stride(), spSize, imgRGB, clusterAssig, saliencySP, saliency);//, alpha, beta);
+    slicSuperPixels(opencl, img.size(), img.stride(), superPixelSpacing, nIters, relWeight, (useLab) ? imgLab : imgRGB, clusterCenters, clusterAssig);
+    saliencyFiltersSP(opencl, spSize, clusterCenters, saliencySP, stdDevUniqueness, stdDevDistribution, k);
+    propagateSaliency(opencl, img.size(), img.stride(), spSize, (useLab) ? imgLab : imgRGB, clusterAssig, saliencySP, saliency, alpha, beta);
 
     float saliency_[img.size().width * img.size().height];
     saliency.readBuffer(opencl, saliency_);

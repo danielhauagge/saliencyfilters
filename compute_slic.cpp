@@ -10,6 +10,7 @@ int
 main(int argc, char const *argv[])
 {
     using namespace cmdc;
+    Logger::setLogLevels(cmdc::LOGLEVEL_INFO);
 
     OptionParser::Arguments args;
     OptionParser::Options opts;
@@ -24,7 +25,7 @@ main(int argc, char const *argv[])
     optParser.addFlag("useGPU", "-g", "--gpu", "Use the GPU for computation");
 
     optParser.addSection("Super Pixel Parameters");
-    optParser.addOption("superPixelSpacing", "-s", "P", "--super-pixel-spacing", "Controls spacing between super pixels [default: %default]", "8");
+    optParser.addOption("superPixelSpacing", "-s", "P", "--super-pixel-spacing", "Controls spacing between super pixels [default: %default]", "64");
     optParser.addOption("nIters", "-n", "N", "--num-iterations", "How many iterations of K-means to run in super pixel routine [default = %default]", "10");
     optParser.addOption("relWeight", "-r", "W", "--relative-weight", "Relative weight of Color vs Position, higher values favor spatial dimensions [default = %default]", "40");
 

@@ -9,18 +9,22 @@ all: ${BIN}
 %.o: %.cpp %.hpp
 	clang++ ${CFLAGS} -c $< -o $@
 
-compute_slic: compute_slic.cpp ${OBJS}
+compute_slic: compute_slic.cpp ${OBJS} *.hpp
 	clang++ ${CFLAGS} ${OBJS} ${LDFLAGS} $< -o $@
 
-compute_saliency: compute_saliency.cpp ${OBJS}
+compute_saliency: compute_saliency.cpp ${OBJS}  *.hpp
 	clang++ ${CFLAGS} ${OBJS} ${LDFLAGS} $< -o $@
 
-test_image: test_image.cpp ${OBJS}
+test_image: test_image.cpp ${OBJS}  *.hpp
 	clang++ ${CFLAGS} ${OBJS} ${LDFLAGS} $< -o $@
 
-test_opencl: test_opencl.cpp ${OBJS}
+test_opencl: test_opencl.cpp ${OBJS}  *.hpp
 	clang++ ${CFLAGS} ${OBJS} ${LDFLAGS} $< -o $@
 
+test:
+	./compute_saliency test.jpg saliency.pgm
+	mogrify -format png saliency.pgm
+	open saliency.png
 
 clean:
 	rm -rf ${OBJS} ${BIN}

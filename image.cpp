@@ -43,7 +43,7 @@ Image::Image(const std::string &fname):
         FreeImage_Unload(tmp8);
 
         _size.width = FreeImage_GetWidth(tmp32);
-        _size.height = FreeImage_GetWidth(tmp32);
+        _size.height = FreeImage_GetHeight(tmp32);
         _stride = FreeImage_GetPitch(tmp32);
         _nChannels =  FreeImage_GetLine(tmp32) / (_size.width * sizeof(float));
 

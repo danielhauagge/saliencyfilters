@@ -1,6 +1,26 @@
 #include "utils.hpp"
 
 void
+writePgm(const std::string &outFName, float *data, const Size &size)
+{
+    int tmp[size.width * size.height];
+
+    float maxVal = data[0], minVal = data[0];
+    for (int i = 1; i < size.width * size.height; i++) {
+        minVal = (minVal > data[i]) ? data[i] : minVal;
+        maxVal = (maxVal < data[i]) ? data[i] : maxVal;
+    }
+
+    float range = maxVal - minVal;
+
+    for (int i = 0; i < size.width * size.height; i++) {
+        tmp[i] = 255.0 * (data[i] - minVal) / range;
+    }
+
+    writePgm(outFName, tmp, size);
+}
+
+void
 writePgm(const std::string &outFName, int *data, const Size &size)
 {
     std::ofstream f(outFName.c_str());

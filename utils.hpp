@@ -3,6 +3,7 @@
 
 #include "common.hpp"
 
+void writePgm(const std::string &outFName, float *data, const Size &size);
 void writePgm(const std::string &outFName, int *data, const Size &size);
 
 #endif // __SAC_UTILS_HPP__

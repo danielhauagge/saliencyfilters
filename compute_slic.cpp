@@ -1,7 +1,8 @@
 #include "common.hpp"
+#include "utils.hpp"
 #include "opencl.hpp"
 #include "slicsuperpixels.hpp"
-#include "utils.hpp"
+#include "colorconversion.hpp"
 
 int
 main(int argc, char const *argv[])
@@ -12,7 +13,7 @@ main(int argc, char const *argv[])
     Image img(inFName);
     int superPixelSpacing = 64;
     int nIters = 10;
-    float relWeight = 0.5;
+    float relWeight = 40; // Relative weight of Color vs Position, higher values favor spatial dimensions
 
     bool useGPU = false;
     OpenCL opencl(useGPU);
@@ -22,9 +23,12 @@ main(int argc, char const *argv[])
     // 3 dims for color + 2 for x and y
     Memory clusterCenters(opencl, CL_MEM_READ_WRITE, sizeof(float) * spSize.width * spSize.height * 5);
     Memory clusterAssig(opencl, CL_MEM_READ_WRITE, sizeof(int) * img.size().width * img.size().height);
-    Memory imgDevice(opencl, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, img.stride() * img.size().height, img(0, 0));
 
-    slicSuperPixels(opencl, img.size(), img.stride(), superPixelSpacing, nIters, relWeight, imgDevice, clusterCenters, clusterAssig);
+    Memory imgRGB(opencl, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, img.stride() * img.size().height, img(0, 0));
+    Memory imgLab(opencl, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, img.stride() * img.size().height, img(0, 0));
+    rgb2lab(opencl, img.size(), img.stride(), imgRGB, imgLab);
+
+    slicSuperPixels(opencl, img.size(), img.stride(), superPixelSpacing, nIters, relWeight, imgLab, clusterCenters, clusterAssig);
 
     int clusterAssig_[img.size().width * img.size().height];
     clusterAssig.readBuffer(opencl, clusterAssig_);

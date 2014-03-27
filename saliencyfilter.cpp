@@ -9,7 +9,7 @@ const char *kernelSources =
     "}                                                                       \n" \
     "                                                                        \n" \
     "float gauss(float d2, float sigma2) {                                   \n" \
-    "   return exp(-d2 / (2.0f * sigma2));                                   \n" \
+    "   return exp((float)(-d2 / (2.0f * sigma2)));                          \n" \
     "}                                                                       \n" \
     "                                                                        \n" \
     "                                                                        \n" \
@@ -96,7 +96,7 @@ const char *kernelSources =
     "                                                                        \n" \
     "   if(i < clustersHeight && j < clustersWidth) {                        \n" \
     "      int idx = (i * clustersWidth + j);                                \n" \
-    "      saliencySP[idx] = uniqueness[idx] * exp(-k * distribution[idx]);  \n" \
+    "      saliencySP[idx] = uniqueness[idx] * exp((float) -k * distribution[idx]);  \n" \
     "   }                                                                    \n" \
     "}                                                                       \n" \
     "                                                                        \n" \
@@ -133,14 +133,14 @@ const char *kernelSources =
     "            float neighColor[3] = {img[neighIdx], img[neighIdx + 1], img[neighIdx + 2]}; \n" \
     "            float neighPos[2] = {ii, jj};                               \n" \
     "                                                                        \n" \
-    "            float w = exp(-0.5 * ( alpha * eucDist2(currColor, neighColor, 3) + beta * eucDist2(currPos, neighPos, 2))); \n" \
+    "            float w = exp((float)-0.5 * ( alpha * eucDist2(currColor, neighColor, 3) + beta * eucDist2(currPos, neighPos, 2))); \n" \
     "            totalW += w;                                                \n" \
     "                                                                        \n" \
     "            totalS += neighSal * w;                                     \n" \
     "         }                                                              \n" \
     "      }                                                                 \n" \
     "      totalS /= totalW;                                                 \n" \
-    "      saliency[i * imWidth + j] = totalS;                                           \n" \
+    "      saliency[i * imWidth + j] = totalS;                               \n" \
     "   }                                                                    \n" \
     "}                                                                       \n" \
     "\n";
@@ -237,7 +237,6 @@ void propagateSaliency(OpenCL &opencl, const Size &imgSize, int imgStride,
     Kernel kernel(opencl, kernelSources, "propagateSaliency");
 
     int supportSize = 3 * sqrt(1.0 / (2.0 * beta));
-    LOG_EXPR(supportSize);
 
     kernel.setArgument( 0, &img.getMemory());
     kernel.setArgument( 1, &clusterAssig.getMemory());

@@ -1,5 +1,5 @@
 BIN:=compute_slic compute_saliency test_image test_opencl
-OBJS:=image.o opencl.o slicsuperpixels.o utils.o saliencyfilter.o
+OBJS:=image.o opencl.o slicsuperpixels.o utils.o saliencyfilter.o colorconversion.o
 
 all: ${BIN}
 

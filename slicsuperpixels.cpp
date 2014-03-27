@@ -180,7 +180,10 @@ slicSuperPixels(OpenCL &opencl,
     initClusterAssig.setArgument(4, &clustersSize[1]);
     initClusterAssig.setArgument(5, &clustersSize[0]);
 
-    executeKernel(opencl, initClusterAssig, imsize);
+    {
+        TIMER("Initializing cluster assignment");
+        executeKernel(opencl, initClusterAssig, imsize);
+    }
 
     // ================================
     // Run K-means
@@ -208,14 +211,9 @@ slicSuperPixels(OpenCL &opencl,
     updateClusterAssignment.setArgument(8, &clustersSize[0]);
     updateClusterAssignment.setArgument(9, &relWeight);
 
+    TIMER("Refining assignment");
     for(int iter = 0; iter < nIters; iter++) {
         executeKernel(opencl, updateClusterCenters, clustersSize);
         executeKernel(opencl, updateClusterAssignment, imsize);
-
-        // float debugClusterCenters[5 * clustersSize[0] * clustersSize[1]];
-        // clusterCenters.readBuffer(opencl, debugClusterCenters);
-        // char debugFname[100];
-        // sprintf(debugFname, "clusterCenters_%03d.png", iter);
-        // writeCentroidsToFile(debugClusterCenters, clustersSize[1], clustersSize[0], debugFname);
     }
 }

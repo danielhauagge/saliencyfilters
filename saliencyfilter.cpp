@@ -165,6 +165,8 @@ elementUniqueness(OpenCL &opencl,
     std::vector<size_t> tmpSize(2);
     tmpSize[0] = gridSize.height;
     tmpSize[1] = gridSize.width;
+
+    TIMER("Computing uniqueness");
     executeKernel(opencl, kernel, tmpSize);
 }
 
@@ -188,6 +190,8 @@ elementDistribution(OpenCL &opencl,
     std::vector<size_t> tmpSize(2);
     tmpSize[0] = gridSize.height;
     tmpSize[1] = gridSize.width;
+
+    TIMER("Computing distribution");
     executeKernel(opencl, kernel, tmpSize);
 }
 
@@ -211,6 +215,8 @@ elementSaliency(OpenCL &opencl,
     std::vector<size_t> tmpSize(2);
     tmpSize[0] = gridSize.height;
     tmpSize[1] = gridSize.width;
+
+    TIMER("Computing saliency");
     executeKernel(opencl, kernel, tmpSize);
 }
 
@@ -228,11 +234,12 @@ saliencyFiltersSP(OpenCL &opencl,
     elementSaliency(opencl, gridSize, uniqueness, distribution, saliencySP, k);
 }
 
-void propagateSaliency(OpenCL &opencl, const Size &imgSize, int imgStride,
-                       const Size &gridSize,
-                       Memory &img, Memory &clusterAssig,
-                       Memory &saliencySP, Memory &saliency,
-                       float alpha, float beta)
+void
+propagateSaliency(OpenCL &opencl, const Size &imgSize, int imgStride,
+                  const Size &gridSize,
+                  Memory &img, Memory &clusterAssig,
+                  Memory &saliencySP, Memory &saliency,
+                  float alpha, float beta)
 {
     Kernel kernel(opencl, kernelSources, "propagateSaliency");
 
@@ -254,5 +261,7 @@ void propagateSaliency(OpenCL &opencl, const Size &imgSize, int imgStride,
     std::vector<size_t> tmpSize(2);
     tmpSize[0] = imgSize.height;
     tmpSize[1] = imgSize.width;
+
+    TIMER("Propagating saliency");
     executeKernel(opencl, kernel, tmpSize);
 }

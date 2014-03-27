@@ -5,12 +5,11 @@
 #include "saliencyfilter.hpp"
 #include "colorconversion.hpp"
 
-#include <CMDCore/optparser>
-
 int
 main(int argc, char const *argv[])
 {
     using namespace cmdc;
+    Logger::setLogLevels(cmdc::LOGLEVEL_INFO);
 
     OptionParser::Arguments args;
     OptionParser::Options opts;
@@ -70,14 +69,9 @@ main(int argc, char const *argv[])
     Memory imgLab(opencl, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, img.stride() * img.size().height, img(0, 0));
     rgb2lab(opencl, img.size(), img.stride(), imgRGB, imgLab);
 
-    LOG_INFO("Computing super pixels");
-    slicSuperPixels(opencl, img.size(), img.stride(), superPixelSpacing, nIters, relWeight, imgLab, clusterCenters, clusterAssig);
-
-    LOG_INFO("Computing saliency");
-    saliencyFiltersSP(opencl, spSize, clusterCenters, saliencySP, stdDevUniqueness, stdDevDistribution, k);
-
-    LOG_INFO("Propagating salicency measure to pixels");
-    propagateSaliency(opencl, img.size(), img.stride(), spSize, imgLab, clusterAssig, saliencySP, saliency, alpha, beta);
+    slicSuperPixels(opencl, img.size(), img.stride(), superPixelSpacing, nIters, relWeight, imgRGB, clusterCenters, clusterAssig);
+    saliencyFiltersSP(opencl, spSize, clusterCenters, saliencySP);//, stdDevUniqueness, stdDevDistribution, k);
+    propagateSaliency(opencl, img.size(), img.stride(), spSize, imgRGB, clusterAssig, saliencySP, saliency);//, alpha, beta);
 
     float saliency_[img.size().width * img.size().height];
     saliency.readBuffer(opencl, saliency_);

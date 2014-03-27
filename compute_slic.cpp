@@ -14,10 +14,21 @@ main(int argc, char const *argv[])
     int nIters = 10;
     float relWeight = 0.5;
 
-    int clusterAssig[img.size().width * img.size().height];
-    slicSuperPixels(img, superPixelSpacing, nIters, relWeight, clusterAssig);
+    bool useGPU = false;
+    OpenCL opencl(useGPU);
 
-    writePgm(outFName, clusterAssig, img.size());
+    Size spSize = superPixelGridSize(img.size(), superPixelSpacing);
+
+    // 3 dims for color + 2 for x and y
+    Memory clusterCenters(opencl, CL_MEM_READ_WRITE, sizeof(float) * spSize.width * spSize.height * 5);
+    Memory clusterAssig(opencl, CL_MEM_READ_WRITE, sizeof(int) * img.size().width * img.size().height);
+    Memory imgDevice(opencl, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, img.stride() * img.size().height, img(0, 0));
+
+    slicSuperPixels(opencl, img, superPixelSpacing, nIters, relWeight, imgDevice, clusterCenters, clusterAssig);
+
+    int clusterAssig_[img.size().width * img.size().height];
+    clusterAssig.readBuffer(opencl, clusterAssig_);
+    writePgm(outFName, clusterAssig_, img.size());
 
     return EXIT_SUCCESS;
 }
